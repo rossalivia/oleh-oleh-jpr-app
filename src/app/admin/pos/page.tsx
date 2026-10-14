@@ -366,7 +366,7 @@ export default function PointOfSalePage() {
         </div>
 
         {/* Kolom Kanan: Nota Keranjang Kasir & Input Pembayaran */}
-        <div className="lg:col-span-5 bg-white border border-[#E8E2D8] rounded-2xl p-5 sm:p-6 space-y-5 shadow-xs sticky top-20">
+        <div id="pos-cart-panel" className="lg:col-span-5 bg-white border border-[#E8E2D8] rounded-2xl p-5 sm:p-6 space-y-5 shadow-xs sticky top-20">
           <div className="flex items-center justify-between border-b border-[#F0EBE1] pb-3">
             <h2 className="font-display text-sm text-[#1A1613] tracking-wide font-semibold">
               Daftar Belanja Pelanggan ({cart.length})
@@ -785,6 +785,35 @@ export default function PointOfSalePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Mobile Floating Cart Summary for Tablet / Phone */}
+      {cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <button
+            onClick={() => {
+              const el = document.getElementById('pos-cart-panel');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="w-full bg-[#1A1613] text-white p-3.5 rounded-2xl shadow-xl border border-[#C06A28]/40 flex items-center justify-between cursor-pointer active:scale-98 transition-all"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-[#C06A28] text-white flex items-center justify-center font-bold text-xs">
+                {cart.reduce((sum, i) => sum + i.quantity, 0)}
+              </span>
+              <div className="text-left">
+                <span className="text-[10px] text-[#A89F91] block uppercase tracking-wider font-mono">Total Belanja</span>
+                <span className="font-mono text-sm font-bold text-white tabular-nums">
+                  {formatRupiah(totalAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#FDF5ED] bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+              <span>Buka Nota & Bayar</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#C06A28]" />
+            </div>
+          </button>
         </div>
       )}
     </div>

@@ -259,6 +259,62 @@ function DetailProdukContent() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Purchase Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E8E2D8] px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] text-[#8A8379] block uppercase tracking-wider font-mono">
+              Total ({quantity} {product.unit})
+            </span>
+            <span className="font-mono text-base font-bold text-[#1A1613] tabular-nums block truncate">
+              {formatRupiah(product.price * quantity)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center border border-[#E8E2D8] rounded-lg bg-[#FAF7F2] h-9">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1 || isOutOfStock}
+                className="w-7 h-full flex items-center justify-center text-[#1A1613] disabled:opacity-30 cursor-pointer"
+                aria-label="Kurangi kuantitas"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-6 text-center font-bold text-xs tabular-nums text-[#1A1613]">
+                {quantity}
+              </span>
+              <button
+                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                disabled={quantity >= product.stock || isOutOfStock}
+                className="w-7 h-full flex items-center justify-center text-[#1A1613] disabled:opacity-30 cursor-pointer"
+                aria-label="Tambah kuantitas"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+
+            <button
+              onClick={handleAdd}
+              disabled={isOutOfStock}
+              className="h-9 px-3 border border-[#C06A28] text-[#C06A28] rounded-lg text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#FDF5ED] disabled:opacity-40 cursor-pointer transition-colors"
+              title="Tambah ke Keranjang"
+              aria-label="Tambah ke Keranjang"
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleBuyNow}
+              disabled={isOutOfStock}
+              className="h-9 px-3.5 bg-[#C06A28] hover:bg-[#A8571B] text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-40 whitespace-nowrap cursor-pointer transition-colors"
+            >
+              Beli Sekarang
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
