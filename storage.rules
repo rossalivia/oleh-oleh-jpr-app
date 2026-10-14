@@ -1,0 +1,47 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // 1. Gambar Produk: Publik bisa membaca (katalog), unggah/edit oleh staf atau admin
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isImage() && isUnder5MB();
+    }
+
+    // 2. Logo & Media Pengaturan Toko: Publik bisa membaca, unggah hanya akun autentikasi/admin
+    match /store/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isImage() && isUnder5MB();
+    }
+
+    // 3. Bukti Transfer Pembayaran (dukung payment_proofs dan payment-proofs)
+    match /payment_proofs/{allPaths=**} {
+      allow read: if true;
+      allow write: if isImage() && isUnder5MB();
+    }
+
+    match /payment-proofs/{allPaths=**} {
+      allow read: if true;
+      allow write: if isImage() && isUnder5MB();
+    }
+
+    // 4. Fallback aturan default
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isImage() && isUnder5MB();
+    }
+  }
+}

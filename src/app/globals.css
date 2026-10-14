@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Jepara Heritage & Modern Commerce Core Palette */
+  --color-canvas: #FAF7F2;
+  --color-canvas-subtle: #F3EFE8;
+  --color-surface: #FFFFFF;
+  --color-charcoal: #1A1613;
+  --color-charcoal-light: #2E2823;
+  --color-muted: #5E5851;
+  --color-subtle: #8A8379;
+  --color-line: #E8E2D8;
+  --color-line-dark: #DDD4C6;
+
+  /* Teak Wood & Warm Amber Core Accent (Warisan Seni Ukir & Kayu Jati) */
+  --color-terracotta: #C06A28;
+  --color-terracotta-hover: #A8571B;
+  --color-terracotta-active: #8F4512;
+  --color-terracotta-soft: #FDF5ED;
+  --color-terracotta-border: #F3DEC9;
+
+  /* Troso Heritage Indigo Accent (Pesisir & Tenun Troso) */
+  --color-troso-indigo: #1E3A5F;
+  --color-troso-soft: #EEF4FA;
+  --color-troso-border: #D0E0F0;
+
+  /* Semantic Status Tokens */
+  --color-status-success: #1E7E34;
+  --color-status-success-bg: #F0F9F1;
+  --color-status-warning: #B76500;
+  --color-status-warning-bg: #FEF8ED;
+  --color-status-error: #C5221F;
+  --color-status-error-bg: #FDF2F2;
+
+  /* Backward Compatibility Aliases smoothly mapped to Enhanced Palette */
+  --color-jeha-dark: #1A1613;
+  --color-jeha-dark-hover: #120F0D;
+  --color-jeha-moss: #C06A28;
+  --color-jeha-moss-hover: #A8571B;
+  --color-jeha-beige: #FDF5ED;
+  --color-jeha-rose: #C06A28;
+  --color-jeha-midnight: #2E2823;
+  --color-jeha-cream: #FAF7F2;
+  --color-jeha-sand: #F3EFE8;
+  --color-jeha-stone: #E8E2D8;
+  --color-jeha-border: #E8E2D8;
+  --color-jeha-card: #FFFFFF;
+  --color-jeha-ink: #1A1613;
+  --color-jeha-muted: #5E5851;
+
+  --font-serif: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans', var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  --background: #FAF7F2;
+  --foreground: #1A1613;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editorial display font utility */
+.font-display {
+  font-family: var(--font-serif);
+}
+
+/* Tabular figures for pricing and inventory data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle, clean custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #DFDCD3;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C96A45;
+}
+
+/* Thermal receipt print styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #thermal-receipt, #thermal-receipt * {
+    visibility: visible;
+  }
+  #thermal-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

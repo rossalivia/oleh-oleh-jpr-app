@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // Helper Functions
+    // ==========================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return request.auth.token.role != null 
+        ? request.auth.token.role 
+        : (exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role 
+            : 'customer');
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (getUserRole() == 'admin' || request.auth.token.admin == true);
+    }
+    
+    function isStaff() {
+      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'cashier' || request.auth.token.admin == true);
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ==========================================
+    // 1. Products Collection
+    // ==========================================
+    // Katalog terbuka untuk publik; edit dan tambah dibatasi untuk admin toko
+    // Update stok diizinkan untuk reservasi pembelian online atau staf
+    match /products/{productId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || isStaff() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'updatedAt'])
+      );
+    }
+
+    // ==========================================
+    // 2. Categories Collection
+    // ==========================================
+    // Kategori terbuka untuk publik; manipulasi master data hanya admin
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // 3. Store Settings Collection
+    // ==========================================
+    // Pengaturan toko (info kontak, alamat, jam buka) publik; ubah hanya admin
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // 4. Inventory Movements (Audit Trail)
+    // ==========================================
+    // Log mutasi stok bersifat immutable (tidak bisa diubah/dihapus)
+    match /inventoryMovements/{movementId} {
+      allow read: if isStaff();
+      allow create: if isStaff() || (
+        request.resource.data.type in ['ONLINE_ORDER_RESERVED', 'ORDER_CANCELLED']
+      );
+      allow update, delete: if false;
+    }
+
+    // ==========================================
+    // 5. Orders Collection
+    // ==========================================
+    // Pelanggan dapat membuat dan memantau pesanan miliknya
+    // Staf/Admin dapat mengelola seluruh pesanan
+    match /orders/{orderId} {
+      allow read: if isStaff() || (isAuthenticated() && resource.data.customerId == request.auth.uid) || true;
+      allow create: if request.resource.data.orderStatus in ['PENDING_PAYMENT', 'WAITING_PAYMENT', 'WAITING_VERIFICATION'] &&
+                       (!('paymentStatus' in request.resource.data) || request.resource.data.paymentStatus in ['UNPAID', 'PENDING_VERIFICATION']);
+      allow update: if isStaff() || (
+        // Pelanggan mengunggah bukti bayar atau membatalkan pesanan mandiri sebelum diverifikasi
+        // Dilarang keras memanipulasi nominal tagihan atau menandai paymentStatus SUCCESS secara mandiri
+        request.resource.data.orderStatus in ['WAITING_VERIFICATION', 'CANCELLED'] &&
+        request.resource.data.paymentStatus != 'SUCCESS' &&
+        request.resource.data.totalAmount == resource.data.totalAmount &&
+        request.resource.data.subtotal == resource.data.subtotal
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // 6. Payments Collection
+    // ==========================================
+    // Upload slip bukti pembayaran; verifikasi hanya oleh staf/admin
+    match /payments/{paymentId} {
+      allow read: if isStaff() || isAuthenticated();
+      allow create: if true;
+      allow update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // 7. Transactions Collection (Jurnal Kas & Omzet)
+    // ==========================================
+    // Log pembukuan penjualan kasir dan online; nominal bersifat immutable
+    // Status hanya dapat diubah oleh staf (misal COMPLETED atau VOIDED)
+    match /transactions/{trxId} {
+      allow read: if isStaff();
+      allow create: if isStaff();
+      allow update: if isStaff() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'voidReason', 'voidedBy']);
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // 8. Users Collection
+    // ==========================================
+    // Pelanggan mengelola profilnya sendiri; Dilarang meng-escalate role menjadi admin/cashier saat registrasi
+    match /users/{userId} {
+      allow read: if isStaff() || isOwner(userId);
+      allow create: if isAuthenticated() && request.auth.uid == userId && (!('role' in request.resource.data) || request.resource.data.role == 'customer');
+      allow update: if (isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // 9. Notifications Collection
+    // ==========================================
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() || isStaff();
+      allow create: if true;
+      allow update: if isAuthenticated() || isStaff();
+      allow delete: if isStaff();
+    }
+  }
+}
