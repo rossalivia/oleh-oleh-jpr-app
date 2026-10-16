@@ -98,7 +98,15 @@ npm run dev
 ```
 Buka peramban Anda di [http://localhost:3000](http://localhost:3000).
 
-### 4. Build Produksi
+### 4. Akun Demo & Uji Coba Cepat (1-Click)
+Pada halaman login ([`/login`](http://localhost:3000/login)), tersedia fitur **Akses Cepat Demo (1-Klik)** yang dapat langsung digunakan tanpa mengetik:
+- 👑 **Administrator:** `admin.demo@jeha.id` (Kata Sandi: `password123`) &rarr; Dashboard Admin, Manajemen Stok & Verifikasi Bayar
+- 🏪 **Kasir Toko (PoS):** `kasir.demo@jeha.id` (Kata Sandi: `password123`) &rarr; Kasir Digital PoS & Cetak Struk
+- 🛍️ **Pelanggan:** `pelanggan.demo@jeha.id` (Kata Sandi: `password123`) &rarr; Belanja Marketplace & Checkout
+
+*Catatan: Sistem secara otomatis mendaftarkan akun ke Firebase Auth dan Firestore (self-seeding) jika akun demo belum ada.*
+
+### 5. Build Produksi
 ```bash
 npm run build
 npm run start

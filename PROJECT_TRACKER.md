@@ -42,10 +42,11 @@
 - [x] **CP9.3 Konfigurasi Deployment Netlify (`netlify.toml`)**
   - [x] Konfigurasi build plugin `@netlify/plugin-nextjs` untuk Next.js App Router.
   - [x] Penerapan header keamanan HTTP modern (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`).
-- [x] **CP9.4 Verifikasi Build Produksi Turbopack**
-  - [x] Uji eksekusi `npm run build` sukses 100% tanpa error, 25 rute statis & parsial teroptimasi sempurna.
 - [x] **CP9.5 Matriks Validasi 20 Skenario Pengujian Bisnis (TC-01 s/d TC-20)**
   - [x] Validasi seluruh 20 skenario uji bisnis yang ditetapkan pada Checkpoint 1 (Stok atomik, Timeout 1 jam, POS receipt, RBAC, Laporan Omzet, dsb.).
+- [x] **CP9.6 Fitur Akses Cepat Akun Demo (1-Click Fast Login)**
+  - [x] Tombol 1-klik di `/login` untuk Administrator, Kasir PoS, dan Pelanggan tanpa perlu mengetik manual.
+  - [x] Mekanisme self-seeding otomatis (Firebase Auth & Firestore role synchronization).
 
 ---
 

@@ -13,10 +13,44 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { STORE_IDENTITY } from '@/lib/constants';
-import { Lock, Mail, User, Loader2, ArrowRight } from 'lucide-react';
+import { Lock, Mail, User, Loader2, ArrowRight, ShieldCheck, Store, ShoppingBag, Sparkles, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useStoreSettings } from '@/context/StoreSettingsContext';
 import { useToast } from '@/context/ToastContext';
+
+// Kredensial akun uji coba resmi Jeha
+const DEMO_ACCOUNTS = {
+  admin: {
+    email: 'admin.demo@jeha.id',
+    password: 'password123',
+    displayName: 'Admin Demo Jeha',
+    role: 'admin' as const,
+    redirect: '/admin/dashboard',
+    label: 'Admin Toko',
+    badge: 'Akses Penuh',
+    desc: 'Kelola produk, stok, verifikasi & omzet',
+  },
+  cashier: {
+    email: 'kasir.demo@jeha.id',
+    password: 'password123',
+    displayName: 'Kasir Demo Jeha',
+    role: 'cashier' as const,
+    redirect: '/admin/pos',
+    label: 'Kasir Toko (PoS)',
+    badge: 'Kasir Offline',
+    desc: 'Kasir kasir toko, scan produk & cetak struk',
+  },
+  customer: {
+    email: 'pelanggan.demo@jeha.id',
+    password: 'password123',
+    displayName: 'Pelanggan Demo Jeha',
+    role: 'customer' as const,
+    redirect: '/',
+    label: 'Pelanggan Toko',
+    badge: 'Marketplace',
+    desc: 'Katalog belanja, keranjang & pembayaran',
+  },
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +64,7 @@ export default function LoginPage() {
   const [roleSelection, setRoleSelection] = useState<'customer' | 'cashier' | 'admin'>('customer');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [demoLoadingRole, setDemoLoadingRole] = useState<'admin' | 'cashier' | 'customer' | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [mounted, setMounted] = useState(false);
 
@@ -158,6 +193,81 @@ export default function LoginPage() {
     }
   };
 
+  // Fitur 1-Click Fast Login Akun Demo Resmi Jeha
+  const handleFastDemoLogin = async (targetRole: 'admin' | 'cashier' | 'customer') => {
+    const account = DEMO_ACCOUNTS[targetRole];
+    setDemoLoadingRole(targetRole);
+    setErrorMsg('');
+
+    try {
+      let currentUser;
+      try {
+        // 1. Coba login langsung
+        const cred = await signInWithEmailAndPassword(auth, account.email, account.password);
+        currentUser = cred.user;
+      } catch (loginErr: any) {
+        // 2. Jika akun demo belum pernah didaftarkan pada Firebase Auth, otomatis daftarkan (auto-seeding)
+        if (
+          loginErr.code === 'auth/user-not-found' ||
+          loginErr.code === 'auth/invalid-credential' ||
+          loginErr.code === 'auth/invalid-login-credentials'
+        ) {
+          try {
+            const createCred = await createUserWithEmailAndPassword(auth, account.email, account.password);
+            currentUser = createCred.user;
+            await updateProfile(currentUser, { displayName: account.displayName });
+          } catch (createErr: any) {
+            console.warn('Auto-create demo account fallback:', createErr);
+            throw loginErr;
+          }
+        } else {
+          throw loginErr;
+        }
+      }
+
+      if (currentUser) {
+        // 3. Pastikan dokumen profil di Firestore tersinkronisasi rolenya
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const snap = await getDoc(userDocRef);
+
+        if (!snap.exists() || snap.data()?.role !== targetRole) {
+          await setDoc(
+            userDocRef,
+            {
+              uid: currentUser.uid,
+              email: account.email,
+              displayName: account.displayName,
+              role: targetRole,
+              createdAt: snap.exists() ? snap.data().createdAt : new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        }
+
+        toast.success(
+          `Masuk sebagai ${account.label} (${account.displayName})`,
+          'Akses Demo 1-Klik Berhasil'
+        );
+
+        if (targetRole === 'admin') {
+          router.push('/admin/dashboard');
+        } else if (targetRole === 'cashier') {
+          router.push('/admin/pos');
+        } else {
+          router.push('/');
+        }
+      }
+    } catch (err: any) {
+      console.error('Demo Login Error:', err);
+      const msg = err.message || 'Gagal masuk akun demo. Silakan coba lagi.';
+      setErrorMsg(msg);
+      toast.error(msg, 'Gagal Demo Login');
+    } finally {
+      setDemoLoadingRole(null);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6] px-4 py-16">
       <div className="max-w-md w-full border border-[#EAE8E2] bg-white p-8 sm:p-10 shadow-xs space-y-6">
@@ -186,6 +296,109 @@ export default function LoginPage() {
             {errorMsg}
           </div>
         )}
+
+        {/* 1-Click Fast Demo Login Card */}
+        <div className="bg-[#FAF7F2] border border-[#E8E2D8] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-[#C96A45]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#1A1613]">
+                Akses Cepat Demo (1-Klik)
+              </span>
+            </div>
+            <span className="text-[10px] font-mono bg-[#EAE8E2] text-[#5C5248] px-2 py-0.5 uppercase tracking-wide">
+              Tanpa Ketik
+            </span>
+          </div>
+
+          <p className="text-[11px] text-[#5C5248] leading-relaxed">
+            Klik salah satu tombol peran di bawah untuk langsung mencoba sistem tanpa login manual:
+          </p>
+
+          <div className="grid grid-cols-1 gap-2 pt-1">
+            {/* Admin */}
+            <button
+              type="button"
+              disabled={loading || googleLoading || demoLoadingRole !== null}
+              onClick={() => handleFastDemoLogin('admin')}
+              className="w-full text-left p-2.5 bg-white hover:bg-[#FAF0EB] border border-[#E8E2D8] hover:border-[#C96A45] transition flex items-center justify-between group disabled:opacity-50 cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 bg-[#FAF0EB] text-[#C96A45] flex items-center justify-center shrink-0 border border-[#ECD9D0] group-hover:bg-[#C96A45] group-hover:text-white transition">
+                  {demoLoadingRole === 'admin' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#1A1613]">Administrator Toko</span>
+                    <span className="text-[9px] font-mono bg-[#FAF0EB] text-[#C96A45] border border-[#ECD9D0] px-1.5 py-0.2">Akses Penuh</span>
+                  </div>
+                  <p className="text-[10px] text-[#666666] truncate">admin.demo@jeha.id &bull; Dashboard, Stok & Verifikasi</p>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-[#8C827A] group-hover:text-[#C96A45] group-hover:translate-x-0.5 transition shrink-0 ml-2" />
+            </button>
+
+            {/* Cashier */}
+            <button
+              type="button"
+              disabled={loading || googleLoading || demoLoadingRole !== null}
+              onClick={() => handleFastDemoLogin('cashier')}
+              className="w-full text-left p-2.5 bg-white hover:bg-[#FAF0EB] border border-[#E8E2D8] hover:border-[#C96A45] transition flex items-center justify-between group disabled:opacity-50 cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 bg-[#FAF0EB] text-[#C96A45] flex items-center justify-center shrink-0 border border-[#ECD9D0] group-hover:bg-[#C96A45] group-hover:text-white transition">
+                  {demoLoadingRole === 'cashier' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Store className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#1A1613]">Kasir Toko (PoS)</span>
+                    <span className="text-[9px] font-mono bg-[#FAF0EB] text-[#C96A45] border border-[#ECD9D0] px-1.5 py-0.2">Kasir Offline</span>
+                  </div>
+                  <p className="text-[10px] text-[#666666] truncate">kasir.demo@jeha.id &bull; Transaksi Kasir & Cetak Struk</p>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-[#8C827A] group-hover:text-[#C96A45] group-hover:translate-x-0.5 transition shrink-0 ml-2" />
+            </button>
+
+            {/* Customer */}
+            <button
+              type="button"
+              disabled={loading || googleLoading || demoLoadingRole !== null}
+              onClick={() => handleFastDemoLogin('customer')}
+              className="w-full text-left p-2.5 bg-white hover:bg-[#FAF0EB] border border-[#E8E2D8] hover:border-[#C96A45] transition flex items-center justify-between group disabled:opacity-50 cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 bg-[#FAF0EB] text-[#C96A45] flex items-center justify-center shrink-0 border border-[#ECD9D0] group-hover:bg-[#C96A45] group-hover:text-white transition">
+                  {demoLoadingRole === 'customer' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShoppingBag className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#1A1613]">Pelanggan Toko</span>
+                    <span className="text-[9px] font-mono bg-[#FAF0EB] text-[#C96A45] border border-[#ECD9D0] px-1.5 py-0.2">Marketplace</span>
+                  </div>
+                  <p className="text-[10px] text-[#666666] truncate">pelanggan.demo@jeha.id &bull; Belanja & Checkout Online</p>
+                </div>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-[#8C827A] group-hover:text-[#C96A45] group-hover:translate-x-0.5 transition shrink-0 ml-2" />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative flex items-center justify-center text-[10px] uppercase font-mono tracking-widest text-[#8C827A]">
+          <span className="bg-white px-3 border border-[#EAE8E2]">Atau Masuk Akun Anda</span>
+        </div>
 
         {/* Tab Masuk / Daftar */}
         <div className="grid grid-cols-2 border border-[#EAE8E2]">
